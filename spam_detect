@@ -1,0 +1,72 @@
+# TASK 3 - SMS Spam Detection using Naive Bayes & Logistic Regression
+
+import pandas as pd
+import numpy as np
+import re
+import string
+from sklearn.model_selection import train_test_split, cross_val_score, GridSearchCV
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.preprocessing import LabelEncoder
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, classification_report, confusion_matrix
+
+# Load Dataset
+df = pd.read_csv("/mnt/data/Navy Bays_SMS SpamCollection.CSV", sep='\t', header=None, names=['label', 'message'], encoding='latin-1')
+
+# 1. Data Preprocessing
+def clean_text(text):
+    text = text.lower()
+    text = re.sub(r'\d+', '', text)              # Remove numbers
+    text = text.translate(str.maketrans('', '', string.punctuation))  # Remove punctuation
+    text = text.strip()
+    return text
+
+df['clean_message'] = df['message'].apply(clean_text)
+
+# Encode Labels (ham=0, spam=1)
+encoder = LabelEncoder()
+df['label_num'] = encoder.fit_transform(df['label'])
+
+# 2. Feature Extraction using TF-IDF
+vectorizer = TfidfVectorizer(stop_words='english', max_features=3000)
+X = vectorizer.fit_transform(df['clean_message']).toarray()
+y = df['label_num']
+
+# 3. Split Data
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# 4. Model 1: Naive Bayes
+nb = MultinomialNB()
+nb.fit(X_train, y_train)
+y_pred_nb = nb.predict(X_test)
+
+# 5. Model 2: Logistic Regression
+lr = LogisticRegression(max_iter=1000)
+lr.fit(X_train, y_train)
+y_pred_lr = lr.predict(X_test)
+
+# 6. Evaluation Function
+def evaluate_model(name, y_true, y_pred):
+    print(f"\n📊 Performance of {name}")
+    print("Accuracy:", accuracy_score(y_true, y_pred))
+    print("Precision:", precision_score(y_true, y_pred))
+    print("Recall:", recall_score(y_true, y_pred))
+    print("F1 Score:", f1_score(y_true, y_pred))
+    print("Confusion Matrix:\n", confusion_matrix(y_true, y_pred))
+    print("Classification Report:\n", classification_report(y_true, y_pred))
+
+evaluate_model("Naive Bayes", y_test, y_pred_nb)
+evaluate_model("Logistic Regression", y_test, y_pred_lr)
+
+# 7. Cross Validation
+cv_nb = cross_val_score(nb, X, y, cv=5).mean()
+cv_lr = cross_val_score(lr, X, y, cv=5).mean()
+print(f"\nCross-Validation Accuracy (Naive Bayes): {cv_nb:.4f}")
+print(f"Cross-Validation Accuracy (Logistic Regression): {cv_lr:.4f}")
+
+# 8. Hyperparameter Tuning for Logistic Regression
+param_grid = {'C': [0.1, 1, 10], 'solver': ['lbfgs', 'liblinear']}
+grid = GridSearchCV(LogisticRegression(max_iter=1000), param_grid, cv=5)
+grid.fit(X_train, y_train)
+print("\nBest Parameters for Logistic Regression:", grid.best_params_)
