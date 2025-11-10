@@ -1,0 +1,57 @@
+# ✅ TASK 5 - Association Rule Learning (Market Basket Optimization)
+
+import pandas as pd
+from mlxtend.frequent_patterns import apriori, association_rules
+from mlxtend.preprocessing import TransactionEncoder
+import matplotlib.pyplot as plt
+
+# 1️⃣ Load Dataset
+dataset = pd.read_csv("Association Rule mining datasets_Market_Basket_Optimisation.csv", header=None)
+
+# Convert dataset into list of transactions
+transactions = []
+for i in range(0, dataset.shape[0]):
+    transaction = [str(item) for item in dataset.iloc[i].dropna()]
+    transactions.append(transaction)
+
+print(f"Total Transactions Loaded: {len(transactions)}")
+
+# 2️⃣ Data Preprocessing - Convert transactions to one-hot encoded format
+te = TransactionEncoder()
+te_array = te.fit(transactions).transform(transactions)
+df = pd.DataFrame(te_array, columns=te.columns_)
+
+print("\nSample of one-hot encoded data:")
+print(df.head())
+
+# 3️⃣ Apply Apriori Algorithm - Generate frequent itemsets
+frequent_itemsets = apriori(df, min_support=0.01, use_colnames=True)
+print("\nFrequent Itemsets (Support ≥ 1%):")
+print(frequent_itemsets.head())
+
+# 4️⃣ Generate Association Rules
+rules = association_rules(frequent_itemsets, metric="lift", min_threshold=1.0)
+rules_sorted = rules.sort_values(by="lift", ascending=False)
+
+print("\nTop 10 Association Rules (Sorted by Lift):")
+print(rules_sorted[['antecedents', 'consequents', 'support', 'confidence', 'lift']].head(10))
+
+# 5️⃣ Visualize Relationship between Support, Confidence, and Lift
+plt.figure(figsize=(7,5))
+plt.scatter(rules['support'], rules['confidence'], alpha=0.7, c=rules['lift'], cmap='viridis')
+plt.colorbar(label='Lift')
+plt.title('Association Rules (Support vs Confidence)')
+plt.xlabel('Support')
+plt.ylabel('Confidence')
+plt.show()
+
+# 6️⃣ Observe Rules with Different Support and Confidence Levels
+# Example 1: Higher thresholds
+rules_high = association_rules(frequent_itemsets, metric="confidence", min_threshold=0.6)
+print("\nRules with Higher Confidence (≥ 0.6):")
+print(rules_high[['antecedents', 'consequents', 'support', 'confidence', 'lift']].head())
+
+# Example 2: Lower thresholds
+rules_low = association_rules(frequent_itemsets, metric="confidence", min_threshold=0.3)
+print("\nRules with Lower Confidence (≥ 0.3):")
+print(rules_low[['antecedents', 'consequents', 'support', 'confidence', 'lift']].head())
