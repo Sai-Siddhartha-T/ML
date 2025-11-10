@@ -1,0 +1,123 @@
+# 📘 LAB ASSIGNMENT: ADMISSION PREDICTION USING MULTIPLE CLASSIFIERS
+
+import numpy as np
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt 
+
+from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeRegressor, plot_tree, DecisionTreeClassifier
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.linear_model import LogisticRegression
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.metrics import ConfusionMatrixDisplay, accuracy_score, classification_report
+
+# Load and prepare dataset
+df = pd.read_csv('Admission_Predict - Admission_Predict.csv')
+df = df.drop('Serial No.',axis=1)
+df['Chance of Admit'] = [1 if each > 0.75 else 0 for each in df['Chance of Admit']]
+
+# Features and target
+x = df[['GRE Score', 'TOEFL Score', 'University Rating', 'SOP', 'LOR', 'CGPA', 'Research']]
+y = df['Chance of Admit']
+
+# Train-test split
+x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.25, random_state=1)
+print(f"Size of splitted data")
+print(f"x_train {x_train.shape}")
+print(f"y_train {y_train.shape}")
+print(f"x_test {x_test.shape}")
+print(f"y_test {y_test.shape}")
+
+# Initialize models
+model_dt = DecisionTreeRegressor(random_state=1)
+model_rf = RandomForestRegressor(random_state=1)
+model_lr = LogisticRegression(random_state=1, solver='lbfgs', max_iter=1000)
+
+# Train models
+model_dt.fit(x_train, y_train)
+model_rf.fit(x_train, y_train)
+model_lr.fit(x_train, y_train)
+
+# Predictions
+y_pred_dt = model_dt.predict(x_test)
+y_pred_rf = model_rf.predict(x_test)
+y_pred_lr = model_lr.predict(x_test)
+y_pred_rf = [1 if each > 0.75 else 0 for each in y_pred_rf]
+
+# Correlation heatmap
+corr = df.corr()
+plt.style.use('ggplot')
+fig, ax = plt.subplots(figsize=(8, 8))
+dropSelf = np.zeros_like(corr)
+dropSelf[np.triu_indices_from(dropSelf)] = False
+colormap = sns.diverging_palette(220, 10, as_cmap=True)
+sns.heatmap(corr, cmap=colormap, linewidths=.5, annot=True, fmt=".2f", mask=dropSelf)
+plt.show()
+
+# Scatter plot
+sns.set_style('whitegrid')
+plt.figure(figsize=(10,10))
+sns.regplot(x="GRE Score", y="TOEFL Score", data=df)
+plt.title("GRE Score vs TOEFL Score")
+plt.show()
+
+# Confusion matrices and reports
+ConfusionMatrixDisplay.from_predictions(y_test, y_pred_dt)
+plt.title('Decision Tree')
+plt.show() 
+print(f" Accuracy is {accuracy_score(y_test, y_pred_dt)}")
+print(classification_report(y_test, y_pred_dt))
+
+ConfusionMatrixDisplay.from_predictions(y_test, y_pred_lr)
+plt.title('Logistic Regression')
+plt.show()
+print(f" Accuracy is {accuracy_score(y_test, y_pred_lr)}")
+print(classification_report(y_test, y_pred_lr))
+
+ConfusionMatrixDisplay.from_predictions(y_test, y_pred_rf, xticks_rotation='vertical')
+plt.title('Random Forest')
+plt.show() 
+print(f" Accuracy is {accuracy_score(y_test, y_pred_rf)}")
+print(classification_report(y_test, y_pred_rf))
+
+# Feature distributions  
+sns.histplot(df['GRE Score'], kde=False)
+plt.title("Distribution of GRE Scores")
+plt.show()
+
+sns.histplot(df['TOEFL Score'], kde=False)
+plt.title("Distribution of TOEFL Scores")
+plt.show()
+
+sns.histplot(df['University Rating'], kde=False)
+plt.title("Distribution of University Rating")
+plt.show()  
+
+sns.histplot(df['SOP'], kde=False)
+plt.title("Distribution of SOP Ratings")
+plt.show()
+
+sns.histplot(df['CGPA'], kde=False)
+plt.title("Distribution of CGPA")
+plt.show()
+
+# Decision Tree Classifier on Iris dataset
+from sklearn.datasets import load_iris
+X, y = load_iris(return_X_y=True)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+clf = DecisionTreeClassifier(random_state=42)
+clf.fit(X_train, y_train)
+y_pred = clf.predict(X_test)
+print("Accuracy:", accuracy_score(y_test, y_pred))
+
+# Tree plot
+plt.figure(figsize=(15,10))
+plot_tree(clf,
+          feature_names=load_iris().feature_names,
+          class_names=load_iris().target_names,
+          filled=True,
+          rounded=True,
+          fontsize=12)
+plt.show()
+
