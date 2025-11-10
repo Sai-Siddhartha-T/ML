@@ -1,0 +1,91 @@
+# 📘 Regression Experiment: Month-wise Average Temperature Prediction using Linear Regression
+# ---------------------------------------------------------------
+# Objective:
+# Develop a predictive model to estimate month-wise average temperature of India
+# using Linear Regression and evaluate its performance.
+
+# 📦 Import necessary libraries
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
+
+# 📁 Load dataset
+data = pd.read_csv("temperatures - temperatures.csv")
+
+# 📆 List of all months
+months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN',
+          'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
+
+# 🧮 Dictionary to store evaluation metrics
+results = []
+
+# 🔁 Train, test, and evaluate Linear Regression for each month
+for month in months:
+    X = data[['YEAR']]
+    y = data[month]
+
+    # Split dataset into Train (80%) and Test (20%)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+    # Create and train the Linear Regression model
+    model = LinearRegression()
+    model.fit(X_train, y_train)
+
+    # Predict temperature on test set
+    y_pred = model.predict(X_test)
+
+    # Evaluate model performance
+    mse = mean_squared_error(y_test, y_pred)
+    mae = mean_absolute_error(y_test, y_pred)
+    r2 = r2_score(y_test, y_pred)
+
+    # Save results for summary table
+    results.append({
+        'Month': month,
+        'Mean Squared Error (MSE)': round(mse, 4),
+        'Mean Absolute Error (MAE)': round(mae, 4),
+        'R-Square (R²)': round(r2, 4)
+    })
+
+    # Display regression equation (for interpretation)
+    print(f"\nRegression Equation for {month}: Temperature = {model.coef_[0]:.4f} × Year + {model.intercept_:.2f}")
+
+    # 📊 Visualization for each month
+    plt.figure(figsize=(7,4))
+    plt.scatter(X_test, y_test, color='blue', label='Actual')
+    plt.plot(X_test, y_pred, color='red', linewidth=2, label='Predicted')
+    plt.title(f'Linear Regression: Year vs {month} Temperature')
+    plt.xlabel('Year')
+    plt.ylabel('Average Temperature (°C)')
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+
+# 📋 Create a DataFrame for performance results
+results_df = pd.DataFrame(results)
+print("\n=== Month-wise Regression Model Performance ===\n")
+print(results_df.to_string(index=False))
+
+# 💾 Optional: Save results to CSV file
+results_df.to_csv("temperature_regression_results.csv", index=False)
+print("\nResults saved as 'temperature_regression_results.csv'.")
+
+# 🌡️ Compute and visualize the Yearly Average Temperature Trend
+data['AVG_TEMP'] = data[['JAN','FEB','MAR','APR','MAY','JUN',
+                         'JUL','AUG','SEP','OCT','NOV','DEC']].mean(axis=1)
+
+plt.figure(figsize=(8,5))
+plt.plot(data['YEAR'], data['AVG_TEMP'], marker='o', color='green')
+plt.title('Yearly Average Temperature Trend in India')
+plt.xlabel('Year')
+plt.ylabel('Average Temperature (°C)')
+plt.grid(True)
+plt.show()
+
+# 📚 Conclusion:
+# The Linear Regression model was successfully applied to predict month-wise
+# average temperatures of India. Performance metrics (MSE, MAE, R²) show a
+# moderate positive correlation between year and temperature, indicating a
+# gradual warming trend across decades.
